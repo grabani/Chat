@@ -86,18 +86,24 @@ extension ChatView {
         }
     }
     
-    nonisolated static private func wrapSectionMessages(_ messages: [Message], chatType: ChatType, replyMode: ReplyMode, isFirstSection: Bool, isLastSection: Bool) -> [MessageRow] {
+    nonisolated static private func wrapSectionMessages(
+    _ messages: [Message],
+    chatType: ChatType,
+    replyMode: ReplyMode,
+    isFirstSection: Bool,
+    isLastSection: Bool
+    ) -> [MessageRow] {
         let rows = messages.enumerated().map {
             let index = $0.offset
             let message = $0.element
             let nextMessage = chatType == .conversation ? messages[safe: index + 1] : messages[safe: index - 1]
             let prevMessage = chatType == .conversation ? messages[safe: index - 1] : messages[safe: index + 1]
-            
+
             let nextMessageExists = nextMessage != nil
             let prevMessageExists = prevMessage != nil
             let nextMessageIsSameUser = nextMessage?.user.id == message.user.id
             let prevMessageIsSameUser = prevMessage?.user.id == message.user.id
-            
+
             let positionInUserGroup: PositionInUserGroup
             if nextMessageExists, nextMessageIsSameUser, prevMessageIsSameUser {
                 positionInUserGroup = .middle
@@ -108,7 +114,7 @@ extension ChatView {
             } else {
                 positionInUserGroup = .last
             }
-            
+
             let positionInMessagesSection: PositionInMessagesSection
             if messages.count == 1 {
                 positionInMessagesSection = .single
@@ -119,7 +125,7 @@ extension ChatView {
             } else {
                 positionInMessagesSection = .middle
             }
-            
+
             if replyMode == .quote {
                 return MessageRow(
                     message: message,
@@ -128,11 +134,11 @@ extension ChatView {
                     commentsPosition: nil
                 )
             }
-            
+
             let nextMessageIsAReply = nextMessage?.replyMessage != nil
             let nextMessageIsFirstLevel = nextMessage?.replyMessage == nil
             let prevMessageIsFirstLevel = prevMessage?.replyMessage == nil
-            
+
             let positionInComments: PositionInCommentsGroup
             if message.replyMessage == nil && !nextMessageIsAReply {
                 positionInComments = .singleFirstLevelPost
@@ -145,7 +151,7 @@ extension ChatView {
             } else {
                 positionInComments = .middleComment
             }
-            
+
             let positionInSection: PositionInSection
             if !prevMessageExists, !nextMessageExists {
                 positionInSection = .single
@@ -156,7 +162,7 @@ extension ChatView {
             } else {
                 positionInSection = .middle
             }
-            
+
             let positionInChat: PositionInChat
             if !isFirstSection, !isLastSection {
                 positionInChat = .middle
@@ -169,13 +175,13 @@ extension ChatView {
             } else {
                 positionInChat = .middle
             }
-            
+
             let commentsPosition = CommentsPosition(
                 inCommentsGroup: positionInComments,
                 inSection: positionInSection,
                 inChat: positionInChat
             )
-            
+
             return MessageRow(
                 message: message,
                 positionInUserGroup: positionInUserGroup,
@@ -183,8 +189,9 @@ extension ChatView {
                 commentsPosition: commentsPosition
             )
         }
-        
+
+        // 🔄 Only reverse for .conversation type
         return chatType == .conversation ? rows.reversed() : rows
-        
     }
+
 }
