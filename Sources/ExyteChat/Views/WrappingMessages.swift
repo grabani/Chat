@@ -8,12 +8,12 @@
 import SwiftUI
 
 extension ChatView {
-
+    
     nonisolated static func mapMessages(_ messages: [Message], chatType: ChatType, replyMode: ReplyMode) -> [MessagesSection] {
         guard messages.hasUniqueIDs() else {
             fatalError("Messages can not have duplicate ids, please make sure every message gets a unique id")
         }
-
+        
         let result: [MessagesSection]
         switch replyMode {
         case .quote:
@@ -21,16 +21,16 @@ extension ChatView {
         case .answer:
             result = mapMessagesCommentModeReplies(messages, chatType: chatType, replyMode: replyMode)
         }
-
+        
         return result
     }
-
+    
     nonisolated static func mapMessagesQuoteModeReplies(_ messages: [Message], chatType: ChatType, replyMode: ReplyMode) -> [MessagesSection] {
         let dates = Set(messages.map({ $0.createdAt.startOfDay() }))
             .sorted()
             .reversed()
         var result: [MessagesSection] = []
-
+        
         for date in dates {
             let section = MessagesSection(
                 date: date,
@@ -39,20 +39,20 @@ extension ChatView {
             )
             result.append(section)
         }
-
+        
         return result
     }
-
+    
     nonisolated static func mapMessagesCommentModeReplies(_ messages: [Message], chatType: ChatType, replyMode: ReplyMode) -> [MessagesSection] {
         let firstLevelMessages = messages.filter { m in
             m.replyMessage == nil
         }
-
+        
         let dates = Set(firstLevelMessages.map({ $0.createdAt.startOfDay() }))
             .sorted()
             .reversed()
         var result: [MessagesSection] = []
-
+        
         for date in dates {
             let dayFirstLevelMessages = firstLevelMessages.filter({ $0.createdAt.isSameDay(date) })
             var dayMessages = [Message]() // insert second level in between first level
@@ -67,16 +67,16 @@ extension ChatView {
                     dayMessages.append(m)
                 }
             }
-
+            
             let isFirstSection = dates.first == date
             let isLastSection = dates.last == date
             let sectionRows = wrapSectionMessages(dayMessages, chatType: chatType, replyMode: replyMode, isFirstSection: isFirstSection, isLastSection: isLastSection)
             result.append(MessagesSection(date: date, rows: sectionRows))
         }
-
+        
         return result
     }
-
+    
     nonisolated static private func getRepliesFor(id: String, messages: [Message]) -> [Message] {
         messages.compactMap { m in
             if m.replyMessage?.id == id {
@@ -85,19 +85,19 @@ extension ChatView {
             return nil
         }
     }
-
+    
     nonisolated static private func wrapSectionMessages(_ messages: [Message], chatType: ChatType, replyMode: ReplyMode, isFirstSection: Bool, isLastSection: Bool) -> [MessageRow] {
         let rows = messages.enumerated().map {
             let index = $0.offset
             let message = $0.element
             let nextMessage = chatType == .conversation ? messages[safe: index + 1] : messages[safe: index - 1]
             let prevMessage = chatType == .conversation ? messages[safe: index - 1] : messages[safe: index + 1]
-
+            
             let nextMessageExists = nextMessage != nil
             let prevMessageExists = prevMessage != nil
             let nextMessageIsSameUser = nextMessage?.user.id == message.user.id
             let prevMessageIsSameUser = prevMessage?.user.id == message.user.id
-
+            
             let positionInUserGroup: PositionInUserGroup
             if nextMessageExists, nextMessageIsSameUser, prevMessageIsSameUser {
                 positionInUserGroup = .middle
@@ -108,7 +108,7 @@ extension ChatView {
             } else {
                 positionInUserGroup = .last
             }
-
+            
             let positionInMessagesSection: PositionInMessagesSection
             if messages.count == 1 {
                 positionInMessagesSection = .single
@@ -119,7 +119,7 @@ extension ChatView {
             } else {
                 positionInMessagesSection = .middle
             }
-
+            
             if replyMode == .quote {
                 return MessageRow(
                     message: message,
@@ -128,11 +128,11 @@ extension ChatView {
                     commentsPosition: nil
                 )
             }
-
+            
             let nextMessageIsAReply = nextMessage?.replyMessage != nil
             let nextMessageIsFirstLevel = nextMessage?.replyMessage == nil
             let prevMessageIsFirstLevel = prevMessage?.replyMessage == nil
-
+            
             let positionInComments: PositionInCommentsGroup
             if message.replyMessage == nil && !nextMessageIsAReply {
                 positionInComments = .singleFirstLevelPost
@@ -145,7 +145,7 @@ extension ChatView {
             } else {
                 positionInComments = .middleComment
             }
-
+            
             let positionInSection: PositionInSection
             if !prevMessageExists, !nextMessageExists {
                 positionInSection = .single
@@ -156,7 +156,7 @@ extension ChatView {
             } else {
                 positionInSection = .middle
             }
-
+            
             let positionInChat: PositionInChat
             if !isFirstSection, !isLastSection {
                 positionInChat = .middle
@@ -169,13 +169,13 @@ extension ChatView {
             } else {
                 positionInChat = .middle
             }
-
+            
             let commentsPosition = CommentsPosition(
                 inCommentsGroup: positionInComments,
                 inSection: positionInSection,
                 inChat: positionInChat
             )
-
+            
             return MessageRow(
                 message: message,
                 positionInUserGroup: positionInUserGroup,
@@ -183,7 +183,8 @@ extension ChatView {
                 commentsPosition: commentsPosition
             )
         }
-
+        
         return chatType == .conversation ? rows.reversed() : rows
-
+        
+    }
 }
