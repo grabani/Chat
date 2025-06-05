@@ -43,39 +43,47 @@ extension ChatView {
         return result
     }
     
-    nonisolated static func mapMessagesCommentModeReplies(_ messages: [Message], chatType: ChatType, replyMode: ReplyMode) -> [MessagesSection] {
-        let firstLevelMessages = messages.filter { m in
-            m.replyMessage == nil
+    nonisolated static func mapMessagesCommentModeReplies(
+    _ messages: [Message],
+    chatType: ChatType,
+    replyMode: ReplyMode
+) -> [MessagesSection] {
+    let firstLevelMessages = messages.filter { $0.replyMessage == nil }
+    let dates = Set(firstLevelMessages.map { $0.createdAt.startOfDay() })
+        .sorted()
+        .reversed()
+
+    var result: [MessagesSection] = []
+
+    for date in dates {
+        let dayFirstLevelMessages = firstLevelMessages
+            .filter { $0.createdAt.isSameDay(date) }
+            .sorted(by: { $0.createdAt > $1.createdAt }) // parent order = newest first
+
+        var dayMessages: [Message] = []
+
+        for parent in dayFirstLevelMessages {
+            dayMessages.append(parent) // parent first
+            let replies = getRepliesFor(id: parent.id, messages: messages)
+                .sorted(by: { $0.createdAt < $1.createdAt }) // replies = ascending
+            dayMessages.append(contentsOf: replies) // then replies
         }
-        
-        let dates = Set(firstLevelMessages.map({ $0.createdAt.startOfDay() }))
-            .sorted()
-            .reversed()
-        var result: [MessagesSection] = []
-        
-        for date in dates {
-            let dayFirstLevelMessages = firstLevelMessages.filter({ $0.createdAt.isSameDay(date) })
-            var dayMessages = [Message]() // insert second level in between first level
-            for m in dayFirstLevelMessages {
-                var replies = getRepliesFor(id: m.id, messages: messages)
-                replies.sort { $0.createdAt < $1.createdAt }
-                if chatType == .conversation {
-                    dayMessages.append(m)
-                }
-                dayMessages.append(contentsOf: replies)
-                if chatType == .comments {
-                    dayMessages.append(m)
-                }
-            }
-            
-            let isFirstSection = dates.first == date
-            let isLastSection = dates.last == date
-            let sectionRows = wrapSectionMessages(dayMessages, chatType: chatType, replyMode: replyMode, isFirstSection: isFirstSection, isLastSection: isLastSection)
-            result.append(MessagesSection(date: date, rows: sectionRows))
-        }
-        
-        return result
+
+        let isFirstSection = dates.first == date
+        let isLastSection = dates.last == date
+        let sectionRows = wrapSectionMessages(
+            dayMessages,
+            chatType: chatType,
+            replyMode: replyMode,
+            isFirstSection: isFirstSection,
+            isLastSection: isLastSection
+        )
+        result.append(MessagesSection(date: date, rows: sectionRows))
     }
+
+    return result
+}
+
     
     nonisolated static private func getRepliesFor(id: String, messages: [Message]) -> [Message] {
         messages.compactMap { m in
@@ -190,8 +198,6 @@ extension ChatView {
             )
         }
 
-        // 🔄 Only reverse for .conversation type
         return chatType == .conversation ? rows.reversed() : rows
     }
-
 }
