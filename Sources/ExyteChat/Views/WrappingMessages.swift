@@ -87,99 +87,103 @@ extension ChatView {
     }
 
     nonisolated static private func wrapSectionMessages(_ messages: [Message], chatType: ChatType, replyMode: ReplyMode, isFirstSection: Bool, isLastSection: Bool) -> [MessageRow] {
-        messages
-            .enumerated()
-            .map {
-                let index = $0.offset
-                let message = $0.element
-                let nextMessage = chatType == .conversation ? messages[safe: index + 1] : messages[safe: index - 1]
-                let prevMessage = chatType == .conversation ? messages[safe: index - 1] : messages[safe: index + 1]
+        let rows = messages.enumerated().map {
+            let index = $0.offset
+            let message = $0.element
+            let nextMessage = chatType == .conversation ? messages[safe: index + 1] : messages[safe: index - 1]
+            let prevMessage = chatType == .conversation ? messages[safe: index - 1] : messages[safe: index + 1]
 
-                let nextMessageExists = nextMessage != nil
-                let prevMessageExists = prevMessage != nil
-                let nextMessageIsSameUser = nextMessage?.user.id == message.user.id
-                let prevMessageIsSameUser = prevMessage?.user.id == message.user.id
+            let nextMessageExists = nextMessage != nil
+            let prevMessageExists = prevMessage != nil
+            let nextMessageIsSameUser = nextMessage?.user.id == message.user.id
+            let prevMessageIsSameUser = prevMessage?.user.id == message.user.id
 
-                let positionInUserGroup: PositionInUserGroup
-                if nextMessageExists, nextMessageIsSameUser, prevMessageIsSameUser {
-                    positionInUserGroup = .middle
-                } else if !nextMessageExists || !nextMessageIsSameUser, !prevMessageIsSameUser {
-                    positionInUserGroup = .single
-                } else if nextMessageExists, nextMessageIsSameUser {
-                    positionInUserGroup = .first
-                } else {
-                    positionInUserGroup = .last
-                }
-
-                let positionInMessagesSection: PositionInMessagesSection
-                if messages.count == 1 {
-                    positionInMessagesSection = .single
-                } else if !prevMessageExists {
-                    positionInMessagesSection = .first
-                } else if !nextMessageExists {
-                    positionInMessagesSection = .last
-                } else {
-                    positionInMessagesSection = .middle
-                }
-
-                if replyMode == .quote {
-                    return MessageRow(
-                        message: $0.element, positionInUserGroup: positionInUserGroup,
-                        positionInMessagesSection: positionInMessagesSection, commentsPosition: nil)
-                }
-
-                let nextMessageIsAReply = nextMessage?.replyMessage != nil
-                let nextMessageIsFirstLevel = nextMessage?.replyMessage == nil
-                let prevMessageIsFirstLevel = prevMessage?.replyMessage == nil
-
-                let positionInComments: PositionInCommentsGroup
-                if message.replyMessage == nil && !nextMessageIsAReply {
-                    positionInComments = .singleFirstLevelPost
-                } else if message.replyMessage == nil && nextMessageIsAReply {
-                    positionInComments = .firstLevelPostWithComments
-                } else if nextMessageIsFirstLevel {
-                    positionInComments = .lastComment
-                } else if prevMessageIsFirstLevel {
-                    positionInComments = .firstComment
-                } else {
-                    positionInComments = .middleComment
-                }
-
-                let positionInSection: PositionInSection
-                if !prevMessageExists, !nextMessageExists {
-                    positionInSection = .single
-                } else if !prevMessageExists {
-                    positionInSection = .first
-                } else if !nextMessageExists {
-                    positionInSection = .last
-                } else {
-                    positionInSection = .middle
-                }
-
-                let positionInChat: PositionInChat
-                if !isFirstSection, !isLastSection {
-                    positionInChat = .middle
-                } else if !prevMessageExists, !nextMessageExists, isFirstSection, isLastSection {
-                    positionInChat = .single
-                } else if !prevMessageExists, isFirstSection {
-                    positionInChat = .first
-                } else if !nextMessageExists, isLastSection {
-                    positionInChat = .last
-                } else {
-                    positionInChat = .middle
-                }
-
-                let commentsPosition = CommentsPosition(
-                    inCommentsGroup: positionInComments, inSection: positionInSection,
-                    inChat: positionInChat)
-
-                return MessageRow(
-                    message: $0.element, positionInUserGroup: positionInUserGroup,
-                    positionInMessagesSection: positionInMessagesSection,
-                    commentsPosition: commentsPosition)
+            let positionInUserGroup: PositionInUserGroup
+            if nextMessageExists, nextMessageIsSameUser, prevMessageIsSameUser {
+                positionInUserGroup = .middle
+            } else if !nextMessageExists || !nextMessageIsSameUser, !prevMessageIsSameUser {
+                positionInUserGroup = .single
+            } else if nextMessageExists, nextMessageIsSameUser {
+                positionInUserGroup = .first
+            } else {
+                positionInUserGroup = .last
             }
-            let rows = messages.enumerated().map { ... }
-            return chatType == .conversation ? rows.reversed() : rows
 
-    }
+            let positionInMessagesSection: PositionInMessagesSection
+            if messages.count == 1 {
+                positionInMessagesSection = .single
+            } else if !prevMessageExists {
+                positionInMessagesSection = .first
+            } else if !nextMessageExists {
+                positionInMessagesSection = .last
+            } else {
+                positionInMessagesSection = .middle
+            }
+
+            if replyMode == .quote {
+                return MessageRow(
+                    message: message,
+                    positionInUserGroup: positionInUserGroup,
+                    positionInMessagesSection: positionInMessagesSection,
+                    commentsPosition: nil
+                )
+            }
+
+            let nextMessageIsAReply = nextMessage?.replyMessage != nil
+            let nextMessageIsFirstLevel = nextMessage?.replyMessage == nil
+            let prevMessageIsFirstLevel = prevMessage?.replyMessage == nil
+
+            let positionInComments: PositionInCommentsGroup
+            if message.replyMessage == nil && !nextMessageIsAReply {
+                positionInComments = .singleFirstLevelPost
+            } else if message.replyMessage == nil && nextMessageIsAReply {
+                positionInComments = .firstLevelPostWithComments
+            } else if nextMessageIsFirstLevel {
+                positionInComments = .lastComment
+            } else if prevMessageIsFirstLevel {
+                positionInComments = .firstComment
+            } else {
+                positionInComments = .middleComment
+            }
+
+            let positionInSection: PositionInSection
+            if !prevMessageExists, !nextMessageExists {
+                positionInSection = .single
+            } else if !prevMessageExists {
+                positionInSection = .first
+            } else if !nextMessageExists {
+                positionInSection = .last
+            } else {
+                positionInSection = .middle
+            }
+
+            let positionInChat: PositionInChat
+            if !isFirstSection, !isLastSection {
+                positionInChat = .middle
+            } else if !prevMessageExists, !nextMessageExists, isFirstSection, isLastSection {
+                positionInChat = .single
+            } else if !prevMessageExists, isFirstSection {
+                positionInChat = .first
+            } else if !nextMessageExists, isLastSection {
+                positionInChat = .last
+            } else {
+                positionInChat = .middle
+            }
+
+            let commentsPosition = CommentsPosition(
+                inCommentsGroup: positionInComments,
+                inSection: positionInSection,
+                inChat: positionInChat
+            )
+
+            return MessageRow(
+                message: message,
+                positionInUserGroup: positionInUserGroup,
+                positionInMessagesSection: positionInMessagesSection,
+                commentsPosition: commentsPosition
+            )
+        }
+
+        return chatType == .conversation ? rows.reversed() : rows
+
 }
