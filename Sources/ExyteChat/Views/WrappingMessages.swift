@@ -178,7 +178,8 @@ extension ChatView {
                     positionInMessagesSection: positionInMessagesSection,
                     commentsPosition: commentsPosition)
             }
-            .reversed()
+            let rows = messages.enumerated().map { ... }
+            return chatType == .conversation ? rows.reversed() : rows
+
     }
 }
-
